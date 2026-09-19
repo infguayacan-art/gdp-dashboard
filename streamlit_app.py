@@ -14,6 +14,12 @@ if "db_productos" not in st.session_state:
         {"id": 103, "sku": "SER-003", "nombre": "Instalación y Ajuste de Cadena", "tipo": "Servicio", "rubro": "Servicios", "stock": 999, "minimo": 0, "costo_fob": 0.0, "costo_cif": 0.0, "p_mayor": 8.0, "p_detal": 10.0, "detalles": "Mano de obra técnica calificada", "oferta": 0}
     ]
 
+if "db_clientes" not in st.session_state:
+    st.session_state.db_clientes = [
+        {"id": 1, "nombre": "Consumidor Final General", "rut": "1-9", "tipo": "Detal", "credito_dias": 0},
+        {"id": 2, "nombre": "Distribuidora Repuestos Norte", "rut": "77.221.000-5", "tipo": "Mayorista", "credito_dias": 30}
+    ]
+
 if "db_ventas" not in st.session_state:
     st.session_state.db_ventas = []
 if "caja_diaria" not in st.session_state:
@@ -96,26 +102,56 @@ def verificar_permiso(usuario, tipo_permiso):
 
 if vista_dispositivo == "💻 Servidor Administrativo":
     st.title("💻 Centro de Control Administrativo")
-    pestanas = st.tabs(["📦 Bodega", "🚢 Adquisiciones", "🛒 Ventas y Caja", "🔐 Permisos"])
+    pestanas = st.tabs(["📦 Bodega", "🚢 Adquisiciones", "🛒 Ventas y Caja", "🔐 Permisos y Configuración"])
     
-    with pestanas[0]:
+    with pestanas:
         st.header("Inventario de Artículos y Servicios")
         df_p = pd.DataFrame(st.session_state.db_productos)
         st.dataframe(df_p)
         
-    with pestanas[1]:
+    with pestanas:
         st.header("Monitoreo Marítimo e Importaciones")
         st.metric("Contenedores en Alta Mar", "2 Buques en Ruta")
         st.progress(0.70, text="🚢 Contenedor en aduana (70%)")
         
-    with pestanas[2]:
-        st.header("Flujo de Tesorería")
-        st.metric("Saldo Caja CLP", f"\${st.session_state.caja_diaria['saldo_local']:,}")
-        st.metric("Saldo Caja USD", f"\${st.session_state.caja_diaria['saldo_usd']:,}")
+    with pestanas:
+        st.header("Flujo de Tesorería y Clientes")
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            st.subheader("Saldos de Caja")
+            st.metric("Saldo Caja Local", f"\${st.session_state.caja_diaria['saldo_local']:,}")
+            st.metric("Saldo Caja USD", f"\${st.session_state.caja_diaria['saldo_usd']:,}")
+        with col_c2:
+            st.subheader("👥 Registro de Clientes Nuevos")
+            c_nombre = st.text_input("Nombre / Razón Social del Cliente")
+            c_rut = st.text_input("RUT / ID Identificación")
+            c_tipo = st.selectbox("Tipo de Cliente", ["Detal", "Mayorista"])
+            c_dias = st.number_input("Días de Crédito Asignados", min_value=0, value=0)
+            if st.button("👥 Guardar Cliente"):
+                st.session_state.db_clientes.append({
+                    "id": len(st.session_state.db_clientes)+1, "nombre": c_nombre, "rut": c_rut, "tipo": c_tipo, "credito_dias": c_dias
+                })
+                st.success(f"¡Cliente '{c_nombre}' guardado en el sistema unificado!")
         
-    with pestanas[3]:
-        st.header("Matriz de Seguridad del Personal")
-        st.write("Configuración de accesos activos para vendedores, compradores y bodegueros.")
+        st.markdown("---")
+        st.subheader("Base de Clientes Registrados")
+        st.dataframe(pd.DataFrame(st.session_state.db_clientes))
+        
+    with pestanas:
+        st.header("Matriz de Permisos e Identidad Corporativa")
+        if rol_actual in ["Administrador", "Jefatura"]:
+            col_id1, col_id2 = st.columns(2)
+            with col_id1:
+                st.subheader("🏢 Datos de la Empresa")
+                nuevo_nombre_empresa = st.text_input("Cambiar Nombre Corporativo:", value=st.session_state.logo_empresa)
+                if st.button("💾 Actualizar Nombre Comercial"):
+                    st.session_state.logo_empresa = nuevo_nombre_empresa
+                    st.success("¡Nombre de la empresa actualizado en todos los dispositivos!")
+            with col_id2:
+                st.subheader("📸 Imagen y Logotipo")
+                uploaded_logo = st.file_uploader("Subir Logotipo de la Empresa (PNG/JPG)", type=["png", "jpg", "jpeg"])
+                if uploaded_logo:
+                    st.success("¡Logotipo cargado con éxito en el servidor!")
 
 elif vista_dispositivo == "🌐 Página Web Clientes":
     st.title(f"🌐 Catálogo Público - {st.session_state.logo_empresa}")
@@ -126,9 +162,19 @@ elif vista_dispositivo == "🌐 Página Web Clientes":
 
 elif vista_dispositivo == "📱 App Móvil Personal":
     st.title("📱 Interfaz Móvil Corporativa")
+    st.subheader("Seleccionar Cliente Facturación")
+    cliente_v = st.selectbox("Cliente:", [c["nombre"] for c in st.session_state.db_clientes])
     prod_selec = st.selectbox("Seleccione Producto", [p["nombre"] for p in st.session_state.db_productos])
     cantidad_v = st.number_input("Cantidad", min_value=1, value=1)
     if st.button("⚡ Registrar Venta e Imprimir"):
         st.success("¡Venta procesada con éxito en la nube!")
-        ticket = f"--- {st.session_state.logo_empresa} ---\\nCANT: {cantidad_v}\\nPRODUCTO: {prod_selec}\\n¡GRACIAS!"
+        ticket = f"--- {st.session_state.logo_empresa} ---\\nCLIENTE: {cliente_v}\\nCANT: {cantidad_v}\\nPRODUCTO: {prod_selec}\\n¡GRACIAS!"
         render_bluetooth_print_button(ticket)
+
+# 🛠️ VENTANA DE MODIFICACIONES DE IA (ACTIVADA EN LA BARRA LATERAL)
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🛠️ Ventana de Modificaciones de IA")
+st.sidebar.caption("Escribe aquí tu orden para el sistema, dale a generar y me la pegas en nuestro chat:")
+instruccion_usuario = st.sidebar.text_area("Bandeja de Órdenes:")
+if instruccion_usuario:
+    st.sidebar.info(f"📋 **Orden Lista:** 'Aplica el siguiente cambio técnico: {instruccion_usuario}'")
