@@ -104,17 +104,17 @@ if vista_dispositivo == "💻 Servidor Administrativo":
     st.title("💻 Centro de Control Administrativo")
     pestanas = st.tabs(["📦 Bodega", "🚢 Adquisiciones", "🛒 Ventas y Caja", "🔐 Permisos y Configuración"])
     
-    with pestanas:
+    with pestanas[0]:
         st.header("Inventario de Artículos y Servicios")
         df_p = pd.DataFrame(st.session_state.db_productos)
         st.dataframe(df_p)
         
-    with pestanas:
+    with pestanas[1]:
         st.header("Monitoreo Marítimo e Importaciones")
         st.metric("Contenedores en Alta Mar", "2 Buques en Ruta")
         st.progress(0.70, text="🚢 Contenedor en aduana (70%)")
         
-    with pestanas:
+    with pestanas[2]:
         st.header("Flujo de Tesorería y Clientes")
         col_c1, col_c2 = st.columns(2)
         with col_c1:
@@ -137,7 +137,7 @@ if vista_dispositivo == "💻 Servidor Administrativo":
         st.subheader("Base de Clientes Registrados")
         st.dataframe(pd.DataFrame(st.session_state.db_clientes))
         
-    with pestanas:
+    with pestanas[3]:
         st.header("Matriz de Permisos e Identidad Corporativa")
         if rol_actual in ["Administrador", "Jefatura"]:
             col_id1, col_id2 = st.columns(2)
